@@ -96,7 +96,7 @@ permission:
   returned: success
   type: string
   sample: allow
-roleid:
+role_id:
   description: The ID of the role to which the role permission belongs.
   returned: success
   type: string
@@ -114,6 +114,7 @@ from ansible.module_utils.cloudstack import (
     cs_argument_spec,
     cs_required_together,
 )
+from cs import CloudStackException
 
 
 class AnsibleCloudStackRolePermission(AnsibleCloudStack):
@@ -122,7 +123,7 @@ class AnsibleCloudStackRolePermission(AnsibleCloudStack):
         super(AnsibleCloudStackRolePermission, self).__init__(module)
         self.returns = {
             'id': 'id',
-            'roleid': 'roleid',
+            'roleid': 'role_id',
             'rule': 'name',
             'permission': 'permission',
             'description': 'description',
@@ -250,8 +251,16 @@ class AnsibleCloudStackRolePermission(AnsibleCloudStack):
             self.result['changed'] = True
 
             if not self.module.check_mode:
-                self.query_api('updateRolePermission', **args)
-                role_perm = self._get_rule()
+                try:
+                    res = self.cs.updateRolePermission(**args)
+                    role_perm = self._get_rule()
+                except CloudStackException:
+                    res = {
+                        'changed': False,
+                        'skipped': True,
+                        'msg': 'Updating rule permission is not supported on cs <= 4.11.'
+                    }
+                    self.result.update(res)
 
         return role_perm
 
