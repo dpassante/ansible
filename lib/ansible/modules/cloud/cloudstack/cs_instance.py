@@ -171,6 +171,12 @@ options:
       - The data will be automatically base64 encoded.
       - Consider switching to HTTP_POST by using I(CLOUDSTACK_METHOD=post) to increase the HTTP_GET size limit of 2KB to 32 KB.
     type: str
+  compress_user_data:
+    description:
+      - Automatically compress user_data when set to C(yes).
+    type: bool
+    default: no
+    version_added: '2.10'
   force:
     description:
       - Force stop/start the instance if required to apply changes, otherwise a running instance will not be changed.
@@ -420,6 +426,7 @@ user-data:
 '''
 
 import base64
+import gzip
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.cloudstack import (
@@ -693,6 +700,8 @@ class AnsibleCloudStackInstance(AnsibleCloudStack):
     def get_user_data(self):
         user_data = self.module.params.get('user_data')
         if user_data is not None:
+            if self.module.params.get('compress_user_data'):
+                user_data = gzip.compress(to_bytes(user_data))
             user_data = to_text(base64.b64encode(to_bytes(user_data)))
         return user_data
 
@@ -1048,6 +1057,7 @@ def main():
         account=dict(),
         project=dict(),
         user_data=dict(),
+        compress_user_data=dict(type='bool', default=False),
         zone=dict(),
         ssh_key=dict(),
         force=dict(type='bool', default=False),
