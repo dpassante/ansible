@@ -40,6 +40,8 @@ options:
     description:
       - Project the instance is related to.
     type: str
+seealso:
+  - module: cs_instance
 extends_documentation_fragment: cloudstack
 '''
 

@@ -198,6 +198,8 @@ options:
       - Map to specify custom parameters.
     type: dict
     version_added: '2.6'
+seealso:
+  - module: cs_instance_info
 extends_documentation_fragment: cloudstack
 '''
 
