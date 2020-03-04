@@ -460,9 +460,9 @@ class AnsibleCloudStack:
         if not zones:
             self.fail_json(msg="No zones available. Please create a zone first")
 
-        # use the first zone if no zone param given
+        # use the active zone which has the lowest ID if no zone param given
         if not zone:
-            self.zone = zones['zone'][0]
+            self.zone = sorted((z for z in zones['zone'] if z['allocationstate'] == 'Enabled'), key=lambda i: i['id'])[0]
             self.result['zone'] = self.zone['name']
             return self._get_by_key(key, self.zone)
 
