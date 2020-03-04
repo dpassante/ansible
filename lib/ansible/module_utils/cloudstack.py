@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import traceback
+from distutils.version import LooseVersion
 
 from ansible.module_utils._text import to_text, to_native
 from ansible.module_utils.basic import missing_required_lib
@@ -209,6 +210,14 @@ class AnsibleCloudStack:
                 return my_dict[key]
             self.fail_json(msg="Something went wrong: %s not found" % key)
         return my_dict
+
+    @staticmethod
+    def _loose_version(version):
+        return LooseVersion(version)
+
+    def _get_cs_version(self):
+        capabilities = self.get_capabilities()
+        return self._loose_version(capabilities['cloudstackversion'])
 
     def query_api(self, command, **args):
         try:
@@ -460,9 +469,13 @@ class AnsibleCloudStack:
         if not zones:
             self.fail_json(msg="No zones available. Please create a zone first")
 
-        # use the first zone if no zone param given
+        # Use the first active zone if no zone param given.
+        # We can no longer rely on the order of the zones returned by CS 4.13 and higher, so we sort them by name
         if not zone:
-            self.zone = zones['zone'][0]
+            if self._get_cs_version >= self._loose_version('4.13.0'):
+                self.zone = sorted((z for z in zones['zone'] if z['allocationstate'] == 'Enabled'), key=lambda i: i['name'])[0]
+            else:
+                self.zone = [z for z in zones['zone'] if z['allocationstate'] == 'Enabled'][0]
             self.result['zone'] = self.zone['name']
             return self._get_by_key(key, self.zone)
 
